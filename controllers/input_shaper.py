@@ -20,8 +20,26 @@ class InputShaper:
         self.chase_cam_active = True
         self.c_was_pressed = False
         
+        # PSF State
+        self.psf_enabled = False
+        self.f_was_pressed = False
+        
     def process_inputs(self, dt: float):
         """Bang-Bang control targeting pure states based on keys"""
+        
+        # Camera Toggle Logic
+        c_pressed = self.keys.get('c', False)
+        if c_pressed and not self.c_was_pressed:
+            self.chase_cam_active = not self.chase_cam_active
+        self.c_was_pressed = c_pressed
+
+        # PSF Toggle Logic
+        f_pressed = self.keys.get('f', False)
+        if f_pressed and not self.f_was_pressed:
+            self.psf_enabled = not self.psf_enabled
+            print(f"PSF Filter is now: {'ON' if self.psf_enabled else 'OFF'}")
+        self.f_was_pressed = f_pressed
+
         # Vertical Velocity (Z) logic
         up = self.keys.get('space', False)
         down = self.keys.get('shift', False)

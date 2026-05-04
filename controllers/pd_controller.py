@@ -1,5 +1,5 @@
 import numpy as np
-from controllers.state import DroneState
+from state import DroneState
 
 class PDController:
     def __init__(self):

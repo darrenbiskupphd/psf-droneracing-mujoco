@@ -49,7 +49,7 @@
     <body name="x2" pos="0 0 0.1" childclass="x2">
       <freejoint/>
       <!-- Placed camera behind the drone (+X), looking forward (-X), pitched down ~15 deg -->
-      <camera name="track" pos="2.0 0 1" xyaxes="0 1 0 -0.259 0 0.966" mode="fixed"/>
+      <camera name="track" pos="2.0 0 1" xyaxes="0 1 0 -0.259 0 0.966" mode="track"/>
       <site name="imu" pos="0 0 .02"/>
       <geom material="phong3SG" mesh="X2_lowpoly" class="visual" quat="0 0 1 1"/>
       <geom class="collision" size=".06 .027 .02" pos=".04 0 .02"/>

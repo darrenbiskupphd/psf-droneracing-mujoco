@@ -79,7 +79,56 @@ Intercept the nominal commands to prevent constraint violations.
     * Must be toggleable via a hotkey (e.g., `F`).
     * When off: Drone can crash into the box walls.
     * When on: Filter overrides user input to prevent boundary penetration.
-2.  **Filter Formulation (Math TBD):**
+2.  **State and Dynamics Definitions:**
+    
+    **State Variables:**
+    
+    | Variable | Description | Reference Frame | MuJoCo Extraction (`data.`) |
+    |----------|-------------|-----------------|---------------------------|
+    | $p$ | Position (X, Y, Z) | World | `qpos[0:3]` |
+    | $v$ | Linear Velocity (X, Y, Z) | World | `qvel[0:3]` |
+    | $\Theta$ | Euler Angles ($\phi, \theta, \psi$) | World (intrinsic Z-Y-X) | `qpos[3:7]` (requires quaternion conversion via scipy) |
+    | $\omega$ | Angular Velocity ($\omega_x, \omega_y, \omega_z$) | Local Body | `qvel[3:6]` |
+    
+    **System Dynamics:**
+    
+    $$
+    \begin{bmatrix}
+    \dot{p} \\
+    \dot{v} \\
+    \dot{\Theta} \\
+    \dot{\omega}
+    \end{bmatrix} = 
+    \begin{bmatrix}
+    v \\
+    \begin{bmatrix} 0 \\ 0 \\ -g \end{bmatrix} + \frac{1}{m} R(\Theta) \begin{bmatrix} 0 \\ 0 \\ \sum u_i \end{bmatrix} \\
+    W(\Theta) \omega \\
+    J^{-1} (M_{2:4} U - \omega \times (J \omega))
+    \end{bmatrix}
+    $$
+    
+    where $W(\Theta) = T(\Theta)^{-1}$ is the rotation rate transformation matrix:
+    
+    $$
+    W(\Theta) = 
+    \begin{bmatrix}
+    1 & \sin \phi \tan \theta & \cos \phi \tan \theta \\
+    0 & \cos \phi & -\sin \phi \\
+    0 & \frac{\sin \phi}{\cos \theta} & \frac{\cos \phi}{\cos \theta}
+    \end{bmatrix}
+    $$
+    
+    The rotation matrix $R(\Theta)$ for intrinsic Z-Y-X Euler angles ($\psi, \theta, \phi$) is:
+    
+    $$
+    R(\Theta) = \begin{bmatrix}
+    \cos\psi \cos\theta & \sin\phi \sin\theta \cos\psi - \sin\psi \cos\phi & \sin\phi \sin\psi + \sin\theta \cos\phi \cos\psi \\
+    \sin\psi \cos\theta & \sin\phi \sin\psi \sin\theta + \cos\phi \cos\psi & -\sin\phi \cos\psi + \sin\psi \sin\theta \cos\phi \\
+    -\sin\theta & \sin\phi \cos\theta & \cos\phi \cos\theta
+    \end{bmatrix}
+    $$
+
+3.  **Filter Formulation (Math TBD):**
     * **[TBD]** Define the state vector $x$ and the system dynamics $f(x,u)$ to be used by the solver (linearized vs. nonlinear).
     * **[TBD]** Define the optimization problem (MPC vs. CBF, objective function, prediction horizon $N$, and terminal constraints).
     * **[TBD]** Select the solver backend (CasADi + IPOPT vs. OSQP).

@@ -3,10 +3,11 @@ import mujoco
 import mujoco.viewer
 import numpy as np
 
-from controllers.state import DroneState
+from state import DroneState
 from controllers.pd_controller import PDController
 from controllers.input_shaper import InputShaper
 from controllers.gui import DroneGUI
+from safety.x2_psf_jax import PredictiveSafetyFilter
 
 def get_drone_state(model, data) -> DroneState:
     # Use qpos offsets for freejoint: 3 for pos, 4 for quat
@@ -29,12 +30,17 @@ def main():
     total_mass = 1.325 # We derived this sum (0.325 ellipsoid + 4 * 0.25 rotors) from xml
     input_shaper = InputShaper(mass=total_mass)
 
+    # Initialize Predictive Safety Filter (JAX-Free variant)
+    J = np.diag(model.body_inertia[1])  # Extract real inertia vector from MuJoCo
+    M = np.linalg.inv(controller.M_inv) # Recover the forward mixer matrix
+    psf = PredictiveSafetyFilter(mass=total_mass, J=J, M=M, horizon=10, dt=0.03, use_rk4=True)
+
     # Initialize Tkinter Control Panel
     gui = DroneGUI(input_shaper)
 
     # Simulation loop setup
     physics_dt = model.opt.timestep # configured to 0.001 in xml
-    control_dt = 0.01             # 100 Hz Control Rate
+    control_dt = 1/60             # 100 Hz Control Rate
     steps_per_control = int(control_dt // physics_dt)
     
     # Optional logic for setting the initial state from keyframe
@@ -55,9 +61,23 @@ def main():
             desired_state = input_shaper.get_desired_state()
 
             current_state = get_drone_state(model, data)
-            motor_commands = controller.compute_control(current_state, desired_state)
+            u_nom = controller.compute_control(current_state, desired_state)
+            
+            # Apply predictive safety filter if enabled by the user
+            if input_shaper.psf_enabled:
+                motor_commands = psf.solve(current_state, u_nom)
+            else:
+                motor_commands = u_nom
+                
             data.ctrl[:] = motor_commands
             
+            if input_shaper.chase_cam_active:
+                viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+                viewer.cam.lookat[:] = current_state.position
+                viewer.cam.azimuth = np.degrees(current_state.euler[2]) + 180
+                viewer.cam.elevation = -20
+                viewer.cam.distance = 3.0
+
             # --- 1000 Hz PHYSICS LOOP ---
             for _ in range(steps_per_control):
                 mujoco.mj_step(model, data)

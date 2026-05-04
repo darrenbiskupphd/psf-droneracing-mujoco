@@ -39,14 +39,22 @@ class DroneGUI:
         self._create_button(row1, "W\n(+Pitch)", 'w')
         self._create_button(row1, "E\n(-Yaw)", 'e')
         
-        # Row 2: A, S, D
+        # Row 2: A, S, D, F
         self._create_button(row2, "A\n(+Roll)", 'a')
         self._create_button(row2, "S\n(-Pitch)", 's')
         self._create_button(row2, "D\n(-Roll)", 'd')
+        self._create_button(row2, "F\n(Psf)", 'f')
+        self.btn_f = row2.winfo_children()[-1] # Reference to change color later if needed
         
         # Row 3: Shift, Space
         self._create_button(row3, "Shift\n(-Thrust)", 'shift', width=12) # A bit long
-        self._create_button(row3, "Space\n(+Thrust)", 'space', width=22) # Very long
+        self._create_button(row3, "Space\n(+Thrust)", 'space', width=20) # Very long
+        
+        row4 = tk.Frame(main_frame, bg="#2b2b2b")
+        row4.pack(anchor="w", padx=(15, 0), pady=10)
+        
+        # Row 4: C (Camera Toggle)
+        self._create_button(row4, "C\n(Camera)", 'c', width=12)
         
         # Add instruction label at the bottom center
         instruction_text = (
