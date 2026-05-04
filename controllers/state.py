@@ -15,5 +15,6 @@ class DroneState:
         # MuJoCo is [qw, qx, qy, qz]
         q = [self.quaternion[1], self.quaternion[2], self.quaternion[3], self.quaternion[0]]
         r = Rotation.from_quat(q)
-        # Returns [roll, pitch, yaw]
-        return r.as_euler('XYZ', degrees=False)
+        
+        yaw, pitch, roll = r.as_euler('zyx', degrees=False)
+        return np.array([roll, pitch, yaw])

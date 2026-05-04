@@ -39,19 +39,44 @@ class PDController:
         Takes in current DroneState and desired vector [vz, phi, theta, psi_dot].
         Returns motor commands [u1, u2, u3, u4].
         """
-        vz_des, phi_des, theta_des, psi_dot_des = desired_state
+        vz_cmd, phi_cmd, theta_cmd, psi_dot_cmd = desired_state
 
-        phi, theta, psi = state.euler
-        omega_x, omega_y, omega_z = state.angular_rate
-        vz = state.velocity[2]
+        phi_global, theta_global, psi_global = state.euler
+        omega_x_local, omega_y_local, omega_z_local = state.angular_rate
+        vz_global = state.velocity[2]
 
-        # Z-axis velocity control -> commanded thrust
-        thrust = self.mass * self.gravity + self.kp_vz * (vz_des - vz)
+        # Transform global observed angles to local body frame
+        c_psi = np.cos(psi_global)
+        s_psi = np.sin(psi_global)
+        
+        phi_obs_local = phi_global * c_psi + theta_global * s_psi
+        theta_obs_local = -phi_global * s_psi + theta_global * c_psi
 
-        # PD attitude control
-        tau_x = self.kp_roll * (phi_des - phi) + self.kd_roll * (0.0 - omega_x)
-        tau_y = self.kp_pitch * (theta_des - theta) + self.kd_pitch * (0.0 - omega_y)
-        tau_z = self.kp_yaw * (psi_dot_des - omega_z)
+        # Transform global velocity to local frame and implement synthetic braking
+        vx_global, vy_global, vz_global = state.velocity
+        vx_local = vx_global * c_psi + vy_global * s_psi
+        vy_local = -vx_global * s_psi + vy_global * c_psi
+        k_brake = -0.15 # Tuning parameter: radians of tilt per m/s of drift
+        
+        if phi_cmd == 0.0:
+            # If drifting left (+vy_local), roll right (-phi) to brake
+            phi_cmd = -k_brake * vy_local 
+            
+        if theta_cmd == 0.0:
+            # If drifting forward (+vx_local), pitch up (+theta) to brake
+            theta_cmd = k_brake * vx_local 
+
+        # Compute errors strictly in the local frame
+        err_phi = phi_cmd - phi_obs_local
+        err_theta = theta_cmd - theta_obs_local
+        
+        # Z-axis velocity control
+        thrust = self.mass * self.gravity + self.kp_vz * (vz_cmd - vz_global)
+
+        # PD attitude control (Local Proportional Error - Local Derivative)
+        tau_x = self.kp_roll * err_phi + self.kd_roll * (0.0 - omega_x_local)
+        tau_y = self.kp_pitch * err_theta + self.kd_pitch * (0.0 - omega_y_local)
+        tau_z = self.kp_yaw * (psi_dot_cmd - omega_z_local)
 
         V = np.array([thrust, tau_x, tau_y, tau_z])
         U = self.M_inv @ V

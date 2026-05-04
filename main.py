@@ -62,7 +62,6 @@ def main():
             for _ in range(steps_per_control):
                 mujoco.mj_step(model, data)
             
-            # Update viewer
             viewer.sync()
 
             # Real-time synchronization

@@ -17,6 +17,8 @@ class InputShaper:
 
         # Input states
         self.keys = {}
+        self.chase_cam_active = True
+        self.c_was_pressed = False
         
     def process_inputs(self, dt: float):
         """Bang-Bang control targeting pure states based on keys"""
