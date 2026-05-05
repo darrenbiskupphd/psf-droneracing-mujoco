@@ -38,13 +38,31 @@
   <worldbody>
     <light directional="true" pos="0 0 5" dir="0 0 -1" diffuse="0.8 0.8 0.8" specular="0.2 0.2 0.2"/>
     <!-- Environment boundary (translucent box) -->
-    <geom name="floor" type="plane" size="5 5 0.1" material="matplane"/>
+    <geom name="floor" type="plane" size="10 5 0.1" material="matplane"/>
     <!-- Adding a bounding box to keep the drone from flying away -->
-    <geom name="wall1" type="box" size="5 0.1 2.5" pos="0 5 2.5" material="matwall"/>
-    <geom name="wall2" type="box" size="5 0.1 2.5" pos="0 -5 2.5" material="matwall"/>
-    <geom name="wall3" type="box" size="0.1 5 2.5" pos="5 0 2.5" material="matwall"/>
-    <geom name="wall4" type="box" size="0.1 5 2.5" pos="-5 0 2.5" material="matwall"/>
-    <geom name="ceiling" type="box" size="5 5 0.1" pos="0 0 5" material="matwall"/>
+    <geom name="wall1" type="box" size="10 0.1 2.5" pos="0 5 2.5" material="matwall"/>
+    <geom name="wall2" type="box" size="10 0.1 2.5" pos="0 -5 2.5" material="matwall"/>
+    <geom name="wall3" type="box" size="0.1 5 2.5" pos="10 0 2.5" material="matwall"/>
+    <geom name="wall4" type="box" size="0.1 5 2.5" pos="-10 0 2.5" material="matwall"/>
+    <geom name="ceiling" type="box" size="10 5 0.1" pos="0 0 5" material="matwall"/>
+
+    <!-- Race Track Elements -->
+    <site name="goal" type="sphere" size="0.5" pos="9.0 4.0 4.0" rgba="0 1 0 0.5"/>
+    <geom name="obs1" type="sphere" size="0.8" pos="0.0 -1.0 2.0" rgba="1 0 0 1.0"/>
+    <geom name="obs2" type="sphere" size="0.8" pos="0.0 2.0 2.5" rgba="1 0 0 1.0"/>
+    <geom name="obs3" type="sphere" size="0.8" pos="4.0 -2.0 3.0" rgba="1 0 0 1.0"/>
+
+    <!-- Prediction dots for PSF visualization -->
+    <site name="pred0" type="sphere" size="0.04" rgba="0 1 0 0.5" pos="0 0 -10"/>
+    <site name="pred1" type="sphere" size="0.04" rgba="0 1 0 0.5" pos="0 0 -10"/>
+    <site name="pred2" type="sphere" size="0.04" rgba="0 1 0 0.5" pos="0 0 -10"/>
+    <site name="pred3" type="sphere" size="0.04" rgba="0 1 0 0.5" pos="0 0 -10"/>
+    <site name="pred4" type="sphere" size="0.04" rgba="0 1 0 0.5" pos="0 0 -10"/>
+    <site name="pred5" type="sphere" size="0.04" rgba="0 1 0 0.5" pos="0 0 -10"/>
+    <site name="pred6" type="sphere" size="0.04" rgba="0 1 0 0.5" pos="0 0 -10"/>
+    <site name="pred7" type="sphere" size="0.04" rgba="0 1 0 0.5" pos="0 0 -10"/>
+    <site name="pred8" type="sphere" size="0.04" rgba="0 1 0 0.5" pos="0 0 -10"/>
+    <site name="pred9" type="sphere" size="0.04" rgba="0 1 0 0.5" pos="0 0 -10"/>
 
     <body name="x2" pos="0 0 0.1" childclass="x2">
       <freejoint/>
@@ -82,6 +100,6 @@
   </sensor>
 
   <keyframe>
-    <key name="hover" qpos="0 0 .3 1 0 0 0" ctrl="3.2495625 3.2495625 3.2495625 3.2495625"/>
+    <key name="hover" qpos="-9.0 -4.0 0.2 0 0 0 1" ctrl="3.2495625 3.2495625 3.2495625 3.2495625"/>
   </keyframe>
 </mujoco>

@@ -49,7 +49,7 @@ Decouple the controller from the plant, shape inputs, and compute motor commands
     * **Attitude ($\phi_{des}, \theta_{des}$):** WASD integrates target angles to a saturation limit (e.g., $\pm 30^\circ$). No key applies rapid exponential decay to $0^\circ$ (auto-leveling).
     * **Yaw Rate ($\dot{\psi}_{des}$):** Q/E sets a fixed scalar target (e.g., $\pm \pi/2$ rad/s). No key resets immediately to $0$ rad/s.
 
-4.  **Inner Controller (PID):**
+4.  **Inner Controller (PD):**
     * Compute body torques required to track the shaped inputs. Extract Euler angles from the `DroneState` quaternion.
     * **Roll ($\tau_x$) & Pitch ($\tau_y$):** PD control on angle errors.
     * **Yaw ($\tau_z$):** P control on angular rate error.
@@ -128,10 +128,6 @@ Intercept the nominal commands to prevent constraint violations.
     \end{bmatrix}
     $$
 
-3.  **Filter Formulation (Math TBD):**
-    * **[TBD]** Define the state vector $x$ and the system dynamics $f(x,u)$ to be used by the solver (linearized vs. nonlinear).
-    * **[TBD]** Define the optimization problem (MPC vs. CBF, objective function, prediction horizon $N$, and terminal constraints).
-    * **[TBD]** Select the solver backend (CasADi + IPOPT vs. OSQP).
 
 ---
 

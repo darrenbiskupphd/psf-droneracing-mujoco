@@ -21,7 +21,7 @@ def get_drone_state(model, data) -> DroneState:
 
 def main():
     # Load the model from the modified XML
-    model = mujoco.MjModel.from_xml_path('x2.xml')
+    model = mujoco.MjModel.from_xml_path('x2_race.xml')
     data = mujoco.MjData(model)
 
     # Initialize PD controller and Input Shaper
@@ -40,7 +40,7 @@ def main():
 
     # Simulation loop setup
     physics_dt = model.opt.timestep # configured to 0.001 in xml
-    control_dt = 1/60             # 100 Hz Control Rate
+    control_dt = 1/100             # 100 Hz Control Rate
     steps_per_control = int(control_dt // physics_dt)
     
     # Optional logic for setting the initial state from keyframe
@@ -52,6 +52,10 @@ def main():
     with mujoco.viewer.launch_passive(model, data) as viewer:
         viewer.cam.distance += 5
         
+        # Precompute site ids for the prediction dots
+        pred_site_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, f"pred{i}") for i in range(10)]
+        goal_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "goal")
+        
         while viewer.is_running() and gui.is_running():
             step_start = time.time()
             
@@ -61,16 +65,23 @@ def main():
             desired_state = input_shaper.get_desired_state()
 
             current_state = get_drone_state(model, data)
+
             u_nom = controller.compute_control(current_state, desired_state)
             
             # Apply predictive safety filter if enabled by the user
             if input_shaper.psf_enabled:
                 motor_commands = psf.solve(current_state, u_nom)
+                traj = psf.get_trajectory(current_state)
+                for i, site_id in enumerate(pred_site_ids):
+                    model.site_pos[site_id] = traj[i]
             else:
                 motor_commands = u_nom
+                for site_id in pred_site_ids:
+                    model.site_pos[site_id] = [0, 0, -10] # Hide them below the floor
                 
             data.ctrl[:] = motor_commands
             
+            # Camera chasing if enabled
             if input_shaper.chase_cam_active:
                 viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
                 viewer.cam.lookat[:] = current_state.position

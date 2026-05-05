@@ -14,7 +14,7 @@ from state import DroneState
 # Optional: Force JAX to use 64-bit floats for solver precision stability
 jax.config.update("jax_enable_x64", True)
 
-def build_jax_functions(mass: float, J_inv: jnp.ndarray, M_torque: jnp.ndarray, 
+def build_jax_functions(mass: float, J_mat: jnp.ndarray, J_inv: jnp.ndarray, M_torque: jnp.ndarray, 
                         N: int, dt: float, box_min: jnp.ndarray, box_max: jnp.ndarray, 
                         use_rk4: bool = False):
     """
@@ -49,10 +49,7 @@ def build_jax_functions(mass: float, J_inv: jnp.ndarray, M_torque: jnp.ndarray,
         theta_dot = W @ omega
         
         tau = M_torque @ u
-        # Note: In JAX, jnp.linalg.inv is fine, but passing J_inv directly is faster.
-        # J * omega requires the inverse of J_inv
-        J_matrix = jnp.linalg.inv(J_inv) 
-        omega_dot = J_inv @ (tau - jnp.cross(omega, J_matrix @ omega))
+        omega_dot = J_inv @ (tau - jnp.cross(omega, J_mat @ omega))
         
         return jnp.concatenate([v, v_dot, theta_dot, omega_dot])
 
@@ -77,13 +74,20 @@ def build_jax_functions(mass: float, J_inv: jnp.ndarray, M_torque: jnp.ndarray,
         U = U_flat.reshape((N, 4))
         x = x0
         
+        obs_centers = jnp.array([[0.0, -1.0, 2.0], [0.0, 2.0, 2.5], [4.0, -2.0, 3.0]])
+        obs_radii = jnp.array([1.0, 1.0, 1.0])
+
         def scan_body(carry_x, u_k):
             next_x = step_fn(carry_x, u_k)
             # We only need the position (first 3 elements) for the box constraints
             p = next_x[0:3]
             margin_min = p - box_min
             margin_max = box_max - p
-            margins = jnp.concatenate([margin_min, margin_max])
+
+            # Obstacle constraints: (distance from center)^2 - radius^2 >= 0
+            obs_margins = jnp.sum((p - obs_centers)**2, axis=1) - (obs_radii**2)
+            
+            margins = jnp.concatenate([margin_min, margin_max, obs_margins])
             return next_x, margins
         
         # jax.lax.scan is a highly optimized JAX loop
@@ -92,6 +96,14 @@ def build_jax_functions(mass: float, J_inv: jnp.ndarray, M_torque: jnp.ndarray,
         # Flatten the margins for SciPy
         return margins_seq.flatten()
 
+    def rollout_states(U_flat, x0):
+        U = U_flat.reshape((N, 4))
+        def scan_body(carry_x, u_k):
+            next_x = step_fn(carry_x, u_k)
+            return next_x, next_x
+        _, states = jax.lax.scan(scan_body, x0, U)
+        return states
+
     def cost(U_flat, u_nom):
         U = U_flat.reshape((N, 4))
         # Broadcast u_nom across the horizon
@@ -99,14 +111,14 @@ def build_jax_functions(mass: float, J_inv: jnp.ndarray, M_torque: jnp.ndarray,
         # Simple L2 tracking cost
         return jnp.sum((U - u_nom_seq)**2)
 
-    # --- Compile the functions and their analytical derivatives ---
     # We use jacfwd (forward mode) because the input (4N) and output (6N) sizes are similar.
     jit_cost = jax.jit(cost)
     jit_grad = jax.jit(jax.grad(cost, argnums=0))
     jit_cons = jax.jit(rollout_constraints)
     jit_cons_jac = jax.jit(jax.jacfwd(rollout_constraints, argnums=0))
+    jit_rollout = jax.jit(rollout_states)
 
-    return jit_cost, jit_grad, jit_cons, jit_cons_jac
+    return jit_cost, jit_grad, jit_cons, jit_cons_jac, jit_rollout
 
 
 class PredictiveSafetyFilter:
@@ -122,14 +134,15 @@ class PredictiveSafetyFilter:
         self.U_prev = np.zeros(self.N * 4)
 
         # Prevents high-speed discretization tunneling through the walls or roof
-        box_min = jnp.array([-4.6, -4.6, 0.1])
-        box_max = jnp.array([ 4.6,  4.6, 4.8])
-        J_inv = jnp.linalg.inv(jnp.array(J))
+        box_min = jnp.array([-9.6, -4.6, 0.1])
+        box_max = jnp.array([ 9.6,  4.6, 4.8])
+        J_mat = jnp.array(J)
+        J_inv = jnp.linalg.inv(J_mat)
         M_torque = jnp.array(M[1:4, :])
         
         # Generate and cache the compiled JAX functions
-        self._cost, self._grad, self._cons, self._cons_jac = build_jax_functions(
-            mass, J_inv, M_torque, self.N, dt, box_min, box_max, use_rk4=use_rk4
+        self._cost, self._grad, self._cons, self._cons_jac, self._rollout = build_jax_functions(
+            mass, J_mat, J_inv, M_torque, self.N, dt, box_min, box_max, use_rk4=use_rk4
         )
 
         self._warmup_compilation()
@@ -147,7 +160,6 @@ class PredictiveSafetyFilter:
     def solve(self, state: DroneState, u_nom: np.ndarray) -> np.ndarray:
         x0 = np.concatenate([state.position, state.velocity, state.euler, state.angular_rate])
         
-        # Convert inputs to JAX arrays
         j_x0 = jnp.array(x0)
         j_unom = jnp.array(u_nom)
         
@@ -173,10 +185,16 @@ class PredictiveSafetyFilter:
             jac=grad_wrapper, # Explicit analytical Gradient
             bounds=self.bounds, 
             constraints=cons,
-            options={'maxiter': 10, 'ftol': 1e-3, 'disp': False}
+            options={'maxiter': 15, 'ftol': 1e-3, 'disp': False}
         )
         
         if res.success or res.status == 9:
             self.U_prev = res.x
             
         return self.U_prev[:4]
+
+    def get_trajectory(self, state: DroneState) -> np.ndarray:
+        x0 = np.concatenate([state.position, state.velocity, state.euler, state.angular_rate])
+        # Returns shape (N, 12), we only need first 3 elements for position
+        traj = self._rollout(self.U_prev, jnp.array(x0))
+        return np.asarray(traj)[:, :3]
