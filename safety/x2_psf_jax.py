@@ -15,13 +15,13 @@ from state import DroneState
 jax.config.update("jax_enable_x64", True)
 
 def build_jax_functions(mass: float, J_mat: jnp.ndarray, J_inv: jnp.ndarray, M_torque: jnp.ndarray, 
-                        N: int, dt: float, box_min: jnp.ndarray, box_max: jnp.ndarray, 
-                        use_rk4: bool = False):
+                        N: int, dt: float, box_min: jnp.ndarray, box_max: jnp.ndarray, use_rk4: bool = False):
     """
     Factory function that creates and JIT-compiles the exact physics 
     and gradients required by the SLSQP solver.
     """
     g = 9.81
+    drone_radius = 0.4
     
     def dynamics(x, u):
         p, v, theta, omega = x[0:3], x[3:6], x[6:9], x[9:12]
@@ -75,22 +75,21 @@ def build_jax_functions(mass: float, J_mat: jnp.ndarray, J_inv: jnp.ndarray, M_t
         x = x0
         
         obs_centers = jnp.array([[0.0, -1.0, 2.0], [0.0, 2.0, 2.5], [4.0, -2.0, 3.0]])
-        obs_radii = jnp.array([1.0, 1.0, 1.0])
+        obs_radii = jnp.array([0.8, 0.8, 0.8])
 
         def scan_body(carry_x, u_k):
             next_x = step_fn(carry_x, u_k)
             # We only need the position (first 3 elements) for the box constraints
             p = next_x[0:3]
-            margin_min = p - box_min
-            margin_max = box_max - p
+            margin_min = p - (box_min + drone_radius)
+            margin_max = (box_max - drone_radius) - p
 
-            # Obstacle constraints: (distance from center)^2 - radius^2 >= 0
-            obs_margins = jnp.sum((p - obs_centers)**2, axis=1) - (obs_radii**2)
+            # Obstacle constraints: (distance from center)^2 - (obs_radius + drone_radius)^2 >= 0
+            obs_margins = jnp.sum((p - obs_centers)**2, axis=1) - ((obs_radii + drone_radius)**2)
             
             margins = jnp.concatenate([margin_min, margin_max, obs_margins])
             return next_x, margins
         
-        # jax.lax.scan is a highly optimized JAX loop
         _, margins_seq = jax.lax.scan(scan_body, x, U)
         
         # Flatten the margins for SciPy
@@ -106,10 +105,9 @@ def build_jax_functions(mass: float, J_mat: jnp.ndarray, J_inv: jnp.ndarray, M_t
 
     def cost(U_flat, u_nom):
         U = U_flat.reshape((N, 4))
-        # Broadcast u_nom across the horizon
-        u_nom_seq = jnp.tile(u_nom, (N, 1))
-        # Simple L2 tracking cost
-        return jnp.sum((U - u_nom_seq)**2)
+        # First term: only penalize deviation of FIRST control input from requested u_nom
+        first_action_cost = jnp.sum((U[0] - u_nom)**2)
+        return first_action_cost
 
     # We use jacfwd (forward mode) because the input (4N) and output (6N) sizes are similar.
     jit_cost = jax.jit(cost)
@@ -133,9 +131,9 @@ class PredictiveSafetyFilter:
         self.bounds = [(self.u_min, self.u_max) for _ in range(self.N * 4)]
         self.U_prev = np.zeros(self.N * 4)
 
-        # Prevents high-speed discretization tunneling through the walls or roof
-        box_min = jnp.array([-9.6, -4.6, 0.1])
-        box_max = jnp.array([ 9.6,  4.6, 4.8])
+        # Actual environment boundaries
+        box_min = jnp.array([-10.0, -5.0, 0.0])
+        box_max = jnp.array([ 10.0,  5.0, 5.0])
         J_mat = jnp.array(J)
         J_inv = jnp.linalg.inv(J_mat)
         M_torque = jnp.array(M[1:4, :])
