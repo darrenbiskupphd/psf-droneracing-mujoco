@@ -28,10 +28,9 @@ def main():
     # Initialize PD controller and Input Shaper
     controller = PDController()
     
-    total_mass = 1.325 # We derived this sum (0.325 ellipsoid + 4 * 0.25 rotors) from xml
+    total_mass = 1.325 # derived this sum (0.325 ellipsoid + 4 * 0.25 rotors) from xml
     input_shaper = InputShaper(mass=total_mass)
 
-    # Initialize Predictive Safety Filter (JAX-Free variant)
     J = np.diag(model.body_inertia[1])  # Extract real inertia vector from MuJoCo
     M = np.linalg.inv(controller.M_inv) # Recover the forward mixer matrix
     psf = PredictiveSafetyFilter(mass=total_mass, J=J, M=M, horizon=10, dt=0.03, use_rk4=True)
@@ -44,7 +43,6 @@ def main():
     control_dt = 1/100             # 100 Hz Control Rate
     steps_per_control = int(control_dt // physics_dt)
     
-    # Optional logic for setting the initial state from keyframe
     keyframe_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_KEY, "hover")
     if keyframe_id >= 0:
         mujoco.mj_resetDataKeyframe(model, data, keyframe_id)

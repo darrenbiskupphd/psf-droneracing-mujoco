@@ -26,7 +26,7 @@
     <material name="matplane" reflectance="0.0" texture="texplane" texrepeat="5 5" texuniform="true"/>
     
     <texture type="2d" builtin="checker" name="texwall" rgb1=".3 .5 .7" rgb2=".2 .4 .6" width="512" height="512"/>
-    <material name="matwall" texture="texwall" texrepeat="6 6" rgba="1 1 1 0.4"/>
+    <material name="matwall" texture="texwall" texrepeat="6 6" rgba="1 1 1 0.8"/>
 
     <texture type="2d" file="X2_lowpoly_texture_SpinningProps_1024.png"/>
     <material name="phong3SG" texture="X2_lowpoly_texture_SpinningProps_1024"/>
@@ -100,6 +100,6 @@
   </sensor>
 
   <keyframe>
-    <key name="hover" qpos="-9.0 -4.0 0.2 0 0 0 1" ctrl="3.2495625 3.2495625 3.2495625 3.2495625"/>
+    <key name="hover" qpos="-6.0 -3.0 0.2 0 0 0 1" ctrl="3.2495625 3.2495625 3.2495625 3.2495625"/>
   </keyframe>
 </mujoco>
