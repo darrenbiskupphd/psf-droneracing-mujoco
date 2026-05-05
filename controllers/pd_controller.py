@@ -57,14 +57,27 @@ class PDController:
         vx_local = vx_global * c_psi + vy_global * s_psi
         vy_local = -vx_global * s_psi + vy_global * c_psi
         k_brake = -0.15 # Tuning parameter: radians of tilt per m/s of drift
+        max_v_xy = 1.0  # Planar speed limit (m/s)
         
         if phi_cmd == 0.0:
             # If drifting left (+vy_local), roll right (-phi) to brake
             phi_cmd = -k_brake * vy_local 
+        else:
+            # Speed limit penalty
+            if vy_local > max_v_xy:
+                phi_cmd += -k_brake * (vy_local - max_v_xy)
+            elif vy_local < -max_v_xy:
+                phi_cmd += -k_brake * (vy_local + max_v_xy)
             
         if theta_cmd == 0.0:
             # If drifting forward (+vx_local), pitch up (+theta) to brake
             theta_cmd = k_brake * vx_local 
+        else:
+            # Speed limit penalty
+            if vx_local > max_v_xy:
+                theta_cmd += k_brake * (vx_local - max_v_xy)
+            elif vx_local < -max_v_xy:
+                theta_cmd += k_brake * (vx_local + max_v_xy)
 
         # Compute errors strictly in the local frame
         err_phi = phi_cmd - phi_obs_local
