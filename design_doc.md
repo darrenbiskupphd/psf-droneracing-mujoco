@@ -1,4 +1,4 @@
-# Incremental Implementation Plan: MuJoCo Quadrotor + PSF
+# Implementation Plan: MuJoCo Quadrotor + PSF
 
 ## Objective
 Build a continuous-time quadrotor simulation in MuJoCo to test a Predictive Safety Filter (PSF). Implementation will be strictly phased. Do not implement downstream phases until the underlying control theory has been derived and validated.
@@ -127,13 +127,3 @@ Intercept the nominal commands to prevent constraint violations.
     -\sin\theta & \sin\phi \cos\theta & \cos\phi \cos\theta
     \end{bmatrix}
     $$
-
-
----
-
-## Phase 4: Race Track and Waypoints (Ready to Implement, Low Priority)
-Visual coaching layer. 
-
-1.  **Pre-allocation:** Define tubular gates in the XML (`contype="0"`, highly transparent).
-2.  **State Machine:** Track target gate via $L_2$ norm distance.
-3.  **Visual Feedback:** Mutate the active gate's `rgba` properties in real-time to guide the user. No dynamic mesh generation.

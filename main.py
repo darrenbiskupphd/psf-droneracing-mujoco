@@ -2,6 +2,7 @@ import time
 import mujoco
 import mujoco.viewer
 import numpy as np
+import matplotlib.pyplot as plt
 
 from state import DroneState
 from controllers.pd_controller import PDController
@@ -56,6 +57,12 @@ def main():
         pred_site_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, f"pred{i}") for i in range(10)]
         goal_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "goal")
         
+        # Logging for plotting
+        t_history = []
+        u_nom_history = []
+        u_filt_history = []
+        sim_start_time = time.time()
+        
         while viewer.is_running() and gui.is_running():
             step_start = time.time()
             
@@ -81,6 +88,12 @@ def main():
                 
             data.ctrl[:] = motor_commands
             
+            # Log data
+            if input_shaper.psf_enabled:
+                t_history.append(time.time() - sim_start_time)
+                u_nom_history.append(u_nom.copy())
+                u_filt_history.append(motor_commands.copy())
+            
             # Camera chasing if enabled
             if input_shaper.chase_cam_active:
                 viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
@@ -99,6 +112,26 @@ def main():
             time_until_next_step = control_dt - (time.time() - step_start)
             if time_until_next_step > 0:
                 time.sleep(time_until_next_step)
+
+    # Plot results after simulation closes
+    if len(t_history) > 0:
+        t_history = np.array(t_history)
+        u_nom_history = np.array(u_nom_history)
+        u_filt_history = np.array(u_filt_history)
+        
+        plt.figure(figsize=(10, 8))
+        for i in range(4):
+            plt.subplot(4, 1, i+1)
+            plt.plot(t_history, u_nom_history[:, i], label='Commanded (u_nom)', linestyle='--')
+            plt.plot(t_history, u_filt_history[:, i], label='Filtered (u_filt)', alpha=0.7)
+            plt.ylabel(f'Motor {i+1} Thrust')
+            plt.grid(True)
+            if i == 0:
+                plt.legend()
+        plt.xlabel('Time (s)')
+        plt.suptitle('Commanded vs. Filtered Motor Inputs')
+        plt.tight_layout()
+        plt.show()
 
 if __name__ == "__main__":
     main()
