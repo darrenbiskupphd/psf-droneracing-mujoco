@@ -1,7 +1,7 @@
 import numpy as np
 
 class InputShaper:
-    def __init__(self, mass: float = 1.325, max_roll_pitch: float = np.deg2rad(25), max_yaw_rate: float = 0.75):
+    def __init__(self, mass: float = 1.325, max_roll_pitch: float = np.deg2rad(20), max_yaw_rate: float = 0.75):
         self.mass = mass
         self.g = 9.81
         
