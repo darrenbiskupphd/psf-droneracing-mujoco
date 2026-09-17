@@ -2,7 +2,7 @@
 
 A MuJoCo simulation of a quadrotor safety filter. A nominal keyboard-controlled PD policy acts as a stand-in for an agent policy; a finite-horizon Predictive Safety Filter (PSF) predicts the drone's nonlinear motion and modifies the requested motor commands when the predicted trajectory approaches the workspace boundary or an obstacle.
 
-<img src="screenshot.png" alt="MuJoCo quadrotor simulation" width="25%">
+<img src="screenshot.png" alt="MuJoCo quadrotor simulation" width="50%">
 
 The green points show the position sequence predicted by the filter.
 
