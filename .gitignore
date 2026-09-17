@@ -1,3 +1,12 @@
-mujoco_tutorials
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+
+# Local project files
+mujoco_tutorials/
 design_doc.md
-_pycache__/
