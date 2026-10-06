@@ -1,10 +1,14 @@
-# Predictive Safety Filtering for a Quadrotor in MuJoCo
+# Predictive Safety Filter Demonstration for a Quadrotor in MuJoCo
 
-A MuJoCo simulation of a quadrotor safety filter. A nominal keyboard-controlled PD policy acts as a stand-in for an agent policy; a finite-horizon Predictive Safety Filter (PSF) predicts the drone's nonlinear motion and modifies the requested motor commands when the predicted trajectory approaches the workspace boundary or an obstacle.
+A MuJoCo simulation of a quadrotor safety filter for EEME6912 Model Predictive Control at Columbia University. A nominal keyboard-controlled PD policy acts as a stand-in for an agent policy; a finite-horizon Predictive Safety Filter (PSF) predicts the drone's nonlinear motion and modifies the requested motor commands when the predicted trajectory approaches the workspace boundary or an obstacle.
 
 <img src="screenshot.png" alt="MuJoCo quadrotor simulation" width="50%">
 
 The green points show the position sequence predicted by the filter.
+
+## Reference
+
+The safety-filter formulation is based on the ideas in *A Predictive Safety Filter for Learning-Based Control of Constrained Nonlinear Dynamical Systems*.
 
 ## Quick start
 
@@ -58,11 +62,13 @@ The nominal controller maps desired roll, pitch, vertical velocity, and yaw rate
 $$
  x = [p, v, \Theta, \omega], \qquad \dot p = v,
 $$
+
 $$
  \dot v = \begin{bmatrix}0\\0\\-g\end{bmatrix}
  + \frac{1}{m}R(\Theta)\begin{bmatrix}0\\0\\\sum_i u_i\end{bmatrix},
  \qquad \dot\Theta = W(\Theta)\omega,
 $$
+
 $$
  \dot\omega = J^{-1}\left(M_\tau u - \omega \times (J\omega)\right).
 $$
@@ -91,9 +97,6 @@ This is a simulation study of a **practical finite-horizon safety filter**, not 
 
 The keyboard controller is a visible stand-in for a learned or agent policy; no RL policy is included. The green goal sphere in the XML is visual only and is not used for navigation or optimization. The current control loop is synchronous, so solver time is part of the simulation's real-time budget rather than being handled by a separate asynchronous planning thread.
 
-## Reference
-
-The safety-filter formulation is based on the ideas in *A Predictive Safety Filter for Learning-Based Control of Constrained Nonlinear Dynamical Systems*.
 
 ## License
 
