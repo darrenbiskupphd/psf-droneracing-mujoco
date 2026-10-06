@@ -64,7 +64,8 @@ $$
 $$
 
 $$
- \dot v = \begin{bmatrix}0\\0\\-g\end{bmatrix} + \frac{1}{m}R(\Theta)\begin{bmatrix}0\\0\\\sum_i u_i\end{bmatrix}, \qquad \dot\Theta = W(\Theta)\omega,
+\dot v = \begin{bmatrix}0 \\ 0 \\ -g\end{bmatrix} + 
+\frac{1}{m}R(\Theta)\begin{bmatrix}0 \\ 0 \\ \sum_i u_i\end{bmatrix}, \qquad \dot\Theta = W(\Theta)\omega,
 $$
 
 $$
