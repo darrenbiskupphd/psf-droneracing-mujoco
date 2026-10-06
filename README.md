@@ -60,7 +60,13 @@ MuJoCo advances the plant at `1 kHz`. The nominal controller and PSF run at `100
 The nominal controller maps desired roll, pitch, vertical velocity, and yaw rate to a total thrust and body torques, then uses the rotor geometry to compute four motor commands. The PSF uses a related 12-state rigid-body model:
 
 $$
-\begin{bmatrix} \dot{p} \\ \dot{v} \\ \dot{\Theta} \\ \dot{\omega} \end{bmatrix} = 
+\begin{bmatrix} 
+\dot{p} \\
+\dot{v} \\
+\dot{\Theta}
+\\ \dot{\omega}
+\end{bmatrix} =
+
 \begin{bmatrix}
 v
 \begin{bmatrix}
