@@ -62,7 +62,7 @@ The nominal controller maps desired roll, pitch, vertical velocity, and yaw rate
 $$
 \begin{bmatrix} \dot{p} \\ \dot{v} \\ \dot{\Theta} \\ \dot{\omega} \end{bmatrix} = 
 \begin{bmatrix}
-v \\[4pt]
+v
 \begin{bmatrix}
 0 \\
 0 \\
@@ -75,8 +75,7 @@ v \\[4pt]
 0 \\
 \sum u_i
 \end{bmatrix}
-\\[10pt]
-W(\Theta)\omega \\[4pt]
+W(\Theta)\omega
 J^{-1}\!\left(M_{2:4}U - \omega \times (J\omega)\right)
 \end{bmatrix}
 $$
