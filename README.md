@@ -61,33 +61,27 @@ The nominal controller maps desired roll, pitch, vertical velocity, and yaw rate
 
 ```math
 \begin{bmatrix}
-\dot{p} \\
-\dot{v} \\
-\dot{\Theta} \\
-\dot{\omega}
+T_{des} \\
+\tau_x \\
+\tau_y \\
+\tau_z
 \end{bmatrix}
 =
 \begin{bmatrix}
-v \\[4pt]
-\begin{bmatrix}
-0 \\
-0 \\
--g
+1 & 1 & 1 & 1 \\
+L & L & -L & -L \\
+-L & L & L & -L \\
+c & -c & c & -c
 \end{bmatrix}
-+
-\frac{1}{m} R(\Theta)
 \begin{bmatrix}
-0 \\
-0 \\
-\sum_i u_i
-\end{bmatrix}
-\\[8pt]
-W(\Theta)\omega \\[4pt]
-J^{-1}\left(M_{2:4}U - \omega \times (J\omega)\right)
+u_1 \\
+u_2 \\
+u_3 \\
+u_4
 \end{bmatrix}
 ```
 
-The PSF uses a related 12-state rigid-body model:
+The PSF uses a related 12-state single rigid-body model:
 
 ```math
 \begin{bmatrix}
@@ -117,7 +111,7 @@ J^{-1}\left(M_{2:4}U - \omega \times (J\omega)\right)
 \end{bmatrix}
 ```
 
-Here, $p$ and $v$ are world-frame position and velocity, $\Theta$ contains roll/pitch/yaw, $\omega$ is body-frame angular rate, $R$ maps body thrust into world coordinates. The prediction model is intentionally simpler than the full MuJoCo contact/physics update.
+Here, $p$ and $v$ are world-frame position and velocity, $\Theta$ contains roll/pitch/yaw, $\omega$ is body-frame angular rate, $R$ maps body thrust into world coordinates. The prediction model is simpler than the full MuJoCo contact/physics update.
 
 At each control step, the filter solves a constrained finite-horizon problem:
 
