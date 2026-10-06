@@ -57,7 +57,7 @@ MuJoCo advances the plant at `1 kHz`. The nominal controller and PSF run at `100
 
 ## Control and prediction model
 
-The nominal controller maps desired roll, pitch, vertical velocity, and yaw rate to a total thrust and body torques, then uses the rotor geometry to compute four motor commands. The PSF uses a related 12-state rigid-body model:
+The nominal controller maps desired roll, pitch, vertical velocity, and yaw rate to a total thrust and body torques, then uses the rotor geometry to compute four motor commands. Rotors are modeled as providing a normal thrust and a cw/ccw torque:
 
 ```math
 \begin{bmatrix}
@@ -87,7 +87,37 @@ J^{-1}\left(M_{2:4}U - \omega \times (J\omega)\right)
 \end{bmatrix}
 ```
 
-Here, $p$ and $v$ are world-frame position and velocity, $\Theta$ contains roll/pitch/yaw, $\omega$ is body-frame angular rate, $R$ maps body thrust into world coordinates, and $M_\tau$ maps rotor thrusts to body torques. The prediction model is intentionally simpler than the full MuJoCo contact/physics update.
+The PSF uses a related 12-state rigid-body model:
+
+```math
+\begin{bmatrix}
+\dot{p} \\
+\dot{v} \\
+\dot{\Theta} \\
+\dot{\omega}
+\end{bmatrix}
+=
+\begin{bmatrix}
+v \\[4pt]
+\begin{bmatrix}
+0 \\
+0 \\
+-g
+\end{bmatrix}
++
+\frac{1}{m} R(\Theta)
+\begin{bmatrix}
+0 \\
+0 \\
+\sum_i u_i
+\end{bmatrix}
+\\[8pt]
+W(\Theta)\omega \\[4pt]
+J^{-1}\left(M_{2:4}U - \omega \times (J\omega)\right)
+\end{bmatrix}
+```
+
+Here, $p$ and $v$ are world-frame position and velocity, $\Theta$ contains roll/pitch/yaw, $\omega$ is body-frame angular rate, $R$ maps body thrust into world coordinates. The prediction model is intentionally simpler than the full MuJoCo contact/physics update.
 
 At each control step, the filter solves a constrained finite-horizon problem:
 
